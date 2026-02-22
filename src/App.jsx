@@ -6,7 +6,7 @@ function App() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('https://you-don't-know.onrender.com/predictions')
+    fetch('https://you-dont-know.onrender.com/predictions')
       .then(res => res.json())
       .then(data => {
         setDaily(data.daily || [])
