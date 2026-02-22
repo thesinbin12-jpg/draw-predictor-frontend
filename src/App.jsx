@@ -22,141 +22,161 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-500"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-600"></div>
       </div>
     )
   }
 
   const getConfidenceColor = (confidence) => {
     if (confidence >= 80) return 'bg-green-500'
-    if (confidence >= 60) return 'bg-yellow-500'
-    return 'bg-red-500'
+    if (confidence >= 60) return 'bg-blue-500'
+    return 'bg-gray-500'
+  }
+
+  const getConfidenceText = (confidence) => {
+    if (confidence >= 80) return 'High'
+    if (confidence >= 60) return 'Medium'
+    return 'Low'
   }
 
   const MatchCard = ({ match, index }) => (
-    <div className="bg-gray-900 rounded-xl p-5 border border-gray-800 hover:border-green-500 transition-all duration-300 shadow-lg">
-      <div className="flex justify-between items-start mb-3">
-        <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-full uppercase tracking-wider">
+    <div className="bg-white rounded-2xl p-6 border-2 border-gray-200 hover:border-green-500 transition-all duration-300 shadow-sm hover:shadow-xl">
+      {/* Header with League & Confidence */}
+      <div className="flex justify-between items-center mb-4">
+        <span className="bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1 rounded-full uppercase tracking-wide">
           {match.league_id || 'League'}
         </span>
-        <span className={`text-white font-bold px-3 py-1 rounded-full text-sm ${getConfidenceColor(match.confidence)}`}>
-          {match.confidence}%
-        </span>
+        <div className={`px-4 py-1 rounded-full text-white font-bold text-sm ${getConfidenceColor(match.confidence)}`}>
+          {match.confidence}% - {getConfidenceText(match.confidence)}
+        </div>
       </div>
       
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-left">
-          <h3 className="text-white font-bold text-lg">{match.home_team}</h3>
-          <p className="text-gray-500 text-sm">Home</p>
+      {/* Teams */}
+      <div className="flex justify-between items-center mb-6">
+        <div className="text-left flex-1">
+          <h3 className="text-gray-900 font-bold text-xl mb-1">{match.home_team}</h3>
+          <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Home</p>
         </div>
-        <div className="text-gray-600 font-bold text-xl">VS</div>
-        <div className="text-right">
-          <h3 className="text-white font-bold text-lg">{match.away_team}</h3>
-          <p className="text-gray-500 text-sm">Away</p>
+        <div className="bg-gray-100 px-4 py-2 rounded-lg mx-4">
+          <span className="text-gray-600 font-bold text-lg">VS</span>
+        </div>
+        <div className="text-right flex-1">
+          <h3 className="text-gray-900 font-bold text-xl mb-1">{match.away_team}</h3>
+          <p className="text-gray-500 text-xs font-medium uppercase tracking-wide">Away</p>
         </div>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex justify-between text-xs text-gray-400">
-          <span>Confidence</span>
-          <span>{match.confidence}%</span>
+      {/* Confidence Bar */}
+      <div className="mb-4">
+        <div className="flex justify-between text-sm mb-2">
+          <span className="text-gray-600 font-medium">Draw Confidence</span>
+          <span className="text-gray-900 font-bold">{match.confidence}%</span>
         </div>
-        <div className="w-full bg-gray-800 rounded-full h-2">
+        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
           <div 
-            className={`h-2 rounded-full ${getConfidenceColor(match.confidence)}`} 
+            className={`h-full rounded-full transition-all duration-500 ${getConfidenceColor(match.confidence)}`} 
             style={{ width: `${match.confidence}%` }}
           ></div>
         </div>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-gray-800 text-center">
-        <p className="text-gray-500 text-xs">
-          {new Date(match.match_date).toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            month: 'short', 
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-          })}
-        </p>
+      {/* Date & Time */}
+      <div className="pt-4 border-t-2 border-gray-100">
+        <div className="flex items-center justify-center text-gray-600">
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <span className="text-sm font-medium">
+            {new Date(match.match_date).toLocaleDateString('en-US', { 
+              weekday: 'short', 
+              month: 'short', 
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </span>
+        </div>
       </div>
     </div>
   )
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white pb-20">
-      {/* Header */}
-      <div className="bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header - White with Green/Blue accents */}
+      <div className="bg-white border-b-4 border-green-500 sticky top-0 z-50 shadow-md">
+        <div className="max-w-6xl mx-auto px-4 py-6">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent">
-                Draw Predictor Pro
+              <h1 className="text-3xl font-extrabold text-gray-900">
+                Draw Predictor <span className="text-green-600">Pro</span>
               </h1>
-              <p className="text-gray-500 text-xs mt-1">AI-Powered Draw Analytics</p>
+              <p className="text-gray-600 text-sm mt-1 font-medium">AI-Powered Draw Analytics</p>
             </div>
-            <div className="bg-gray-800 px-3 py-1 rounded-lg">
-              <span className="text-green-400 text-xs font-bold">● LIVE</span>
+            <div className="bg-green-100 px-4 py-2 rounded-lg border-2 border-green-500">
+              <span className="text-green-700 text-sm font-bold flex items-center">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                LIVE
+              </span>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex space-x-2 mt-4">
+          {/* Tabs - Green & Blue */}
+          <div className="flex space-x-3 mt-6">
             <button
               onClick={() => setActiveTab('daily')}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 py-3 px-6 rounded-xl text-sm font-bold transition-all duration-300 ${
                 activeTab === 'daily' 
-                  ? 'bg-green-600 text-white' 
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  ? 'bg-green-600 text-white shadow-lg transform scale-105' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              Daily Top 5
+              📅 Daily Top 5
             </button>
             <button
               onClick={() => setActiveTab('weekly')}
-              className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex-1 py-3 px-6 rounded-xl text-sm font-bold transition-all duration-300 ${
                 activeTab === 'weekly' 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+                  ? 'bg-blue-600 text-white shadow-lg transform scale-105' 
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
-              7-Day Outlook
+              📊 7-Day Outlook
             </button>
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {activeTab === 'daily' ? (
           <>
-            <div className="mb-6">
-              <h2 className="text-lg font-bold text-white mb-2">📅 Today's Best Draws</h2>
-              <p className="text-gray-500 text-sm">Highest confidence predictions for today</p>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Today's Best Draws</h2>
+              <p className="text-gray-600">Highest confidence predictions for today</p>
             </div>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {daily.length > 0 ? daily.map((match, i) => (
                 <MatchCard key={i} match={match} index={i} />
               )) : (
-                <div className="col-span-2 text-center py-10 text-gray-500">
-                  No predictions for today yet.
+                <div className="col-span-3 text-center py-16 bg-white rounded-2xl border-2 border-gray-200">
+                  <p className="text-gray-500 text-lg font-medium">No predictions for today yet.</p>
                 </div>
               )}
             </div>
           </>
         ) : (
           <>
-            <div className="mb-6">
-              <h2 className="text-lg font-bold text-white mb-2">📊 7-Day Rolling Outlook</h2>
-              <p className="text-gray-500 text-sm">35 predictions for the week ahead</p>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">7-Day Rolling Outlook</h2>
+              <p className="text-gray-600">35 predictions for the week ahead</p>
             </div>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {weekly.length > 0 ? weekly.map((match, i) => (
                 <MatchCard key={i} match={match} index={i} />
               )) : (
-                <div className="col-span-3 text-center py-10 text-gray-500">
-                  No weekly predictions yet.
+                <div className="col-span-3 text-center py-16 bg-white rounded-2xl border-2 border-gray-200">
+                  <p className="text-gray-500 text-lg font-medium">No weekly predictions yet.</p>
                 </div>
               )}
             </div>
@@ -164,11 +184,14 @@ function App() {
         )}
       </div>
 
-      {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 py-3">
-        <div className="max-w-4xl mx-auto px-4 text-center">
-          <p className="text-gray-600 text-xs">
+      {/* Footer - Grey with Green accent */}
+      <div className="bg-gray-900 border-t-4 border-green-500 py-6 mt-12">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+          <p className="text-gray-400 text-sm font-medium">
             AI updates daily at 11 PM UTC • Data from football-data.org
+          </p>
+          <p className="text-gray-500 text-xs mt-2">
+            Powered by Machine Learning • Built for Precision
           </p>
         </div>
       </div>
