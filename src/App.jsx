@@ -134,7 +134,7 @@ function App() {
         </div>
       </div>
 
-      {/* ✅ NEW: Uncertainty Margin (So YOU see the risk) */}
+      {/* Uncertainty Margin */}
       <div style={{
         marginBottom: '20px',
         padding: '12px',
@@ -229,7 +229,7 @@ function App() {
                 boxShadow: activeTab === 'daily' ? '0 4px 12px rgba(16, 185, 129, 0.3)' : 'none'
               }}
             >
-              📅 Daily Top 5
+              📅 Daily Picks
             </button>
             <button
               onClick={() => setActiveTab('weekly')}
@@ -259,10 +259,10 @@ function App() {
           <>
             <div style={{marginBottom: '32px'}}>
               <h2 style={{fontSize: '24px', fontWeight: '700', color: '#111827', marginBottom: '8px'}}>
-                Today's Best Draws
+                Today's Picks
               </h2>
               <p style={{fontSize: '15px', color: '#6b7280'}}>
-                Highest confidence predictions for today
+                AI-selected draws for today ({daily.length} pick{daily.length !== 1 ? 's' : ''})
               </p>
             </div>
             <div style={{
@@ -281,21 +281,24 @@ function App() {
                   borderRadius: '16px',
                   border: '2px solid #e5e7eb'
                 }}>
-                  <p style={{color: '#6b7280', fontSize: '16px', fontWeight: '500'}}>
-                    No predictions for today yet.
+                  <p style={{color: '#6b7280', fontSize: '16px', fontWeight: '500', marginBottom: '8px'}}>
+                    ⚠️ No predictions for today
+                  </p>
+                  <p style={{color: '#9ca3af', fontSize: '14px'}}>
+                    AI didn't find any high-confidence draws (60%+).<br/>Check back tomorrow!
                   </p>
                 </div>
               )}
             </div>
           </>
-        ) : (
+          ) : (
           <>
             <div style={{marginBottom: '32px'}}>
               <h2 style={{fontSize: '24px', fontWeight: '700', color: '#111827', marginBottom: '8px'}}>
                 7-Day Rolling Outlook
               </h2>
               <p style={{fontSize: '15px', color: '#6b7280'}}>
-                20 predictions for the week ahead
+                {weekly.length} predictions for the week ahead
               </p>
             </div>
             <div style={{
@@ -343,7 +346,7 @@ function App() {
       <style>{`
         @keyframes pulse {
           0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+          50% { opacity: '0.5'; }
         }
       `}</style>
     </div>
