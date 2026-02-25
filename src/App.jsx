@@ -134,6 +134,25 @@ function App() {
         </div>
       </div>
 
+      {/* ✅ NEW: Uncertainty Margin (So YOU see the risk) */}
+      <div style={{
+        marginBottom: '20px',
+        padding: '12px',
+        backgroundColor: '#f9fafb',
+        borderRadius: '8px',
+        border: '1px solid #e5e7eb'
+      }}>
+        <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '13px'}}>
+          <span style={{color: '#6b7280', fontWeight: '500'}}>Uncertainty Margin</span>
+          <span style={{color: '#111827', fontWeight: '700'}}>
+            ±{match.uncertainty_margin || 0}%
+          </span>
+        </div>
+        <p style={{margin: '4px 0 0 0', fontSize: '11px', color: '#9ca3af'}}>
+          Lower margin = More reliable prediction
+        </p>
+      </div>
+
       {/* Date */}
       <div style={{
         paddingTop: '16px',
