@@ -28,26 +28,29 @@
         <div id="picks">Loading...</div>
     </div>
 
-    <script>
-        fetch('dashboard_data.json')
-            .then(r => r.json())
-            .then(data => {
-                document.getElementById('accuracy').textContent = data.overall_stats.accuracy + '%';
-                document.getElementById('total').textContent = data.overall_stats.total_predictions;
-                
-                const picksHtml = data.today_picks.map(pick => 
-                    `<div style="margin: 10px 0; padding: 10px; background: #f9fafb; border-radius: 5px;">
-                        <strong>${pick.home} vs ${pick.away}</strong><br>
-                        Confidence: ${pick.confidence}% | Uncertainty: ±${pick.uncertainty}%
-                    </div>`
-                ).join('');
-                
-                document.getElementById('picks').innerHTML = picksHtml;
-            })
-            .catch(err => {
-                console.error('Error loading dashboard:', err);
-                document.getElementById('accuracy').textContent = 'Error loading';
-            });
-    </script>
+   <script>
+    // Fetch from API instead of JSON file
+    fetch('/api/dashboard')
+        .then(r => r.json())
+        .then(data => {
+            document.getElementById('accuracy').textContent = data.overall_stats.accuracy + '%';
+            document.getElementById('total').textContent = data.overall_stats.total_predictions;
+            
+            const picksHtml = data.today_picks.map(pick => 
+                `<div style="margin: 10px 0; padding: 10px; background: #f9fafb; border-radius: 5px;">
+                    <strong>${pick.home} vs ${pick.away}</strong><br>
+                    Confidence: ${pick.confidence}% | Uncertainty: ±${pick.uncertainty}%<br>
+                    <small>${pick.match_date}</small>
+                </div>`
+            ).join('');
+            
+            document.getElementById('picks').innerHTML = picksHtml;
+        })
+        .catch(err => {
+            console.error('Error loading dashboard:', err);
+            document.getElementById('accuracy').textContent = 'Error';
+            document.getElementById('picks').innerHTML = '<p>Failed to load dashboard data</p>';
+        });
+</script>
 </body>
 </html>
