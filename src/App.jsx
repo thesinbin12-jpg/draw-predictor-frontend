@@ -3,19 +3,32 @@ import { useState, useEffect } from 'react'
 function App() {
   const [daily, setDaily] = useState([])
   const [weekly, setWeekly] = useState([])
+  const [dashboard, setDashboard] = useState(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('daily')
 
   useEffect(() => {
+    // Fetch predictions
     fetch('https://you-dont-know.onrender.com/predictions')
       .then(res => res.json())
       .then(data => {
         setDaily(data.daily || [])
         setWeekly(data.weekly || [])
-        setLoading(false)
+        
+        // Fetch dashboard analytics
+        fetch('https://you-dont-know.onrender.com/dashboard')
+          .then(res => res.json())
+          .then(dashData => {
+            setDashboard(dashData)
+            setLoading(false)
+          })
+          .catch(err => {
+            console.error('Dashboard error:', err)
+            setLoading(false)
+          })
       })
       .catch(err => {
-        console.error(err)
+        console.error('Predictions error:', err)
         setLoading(false)
       })
   }, [])
@@ -169,6 +182,7 @@ function App() {
 
   return (
     <div style={{minHeight: '100vh', backgroundColor: '#f9fafb'}}>
+      {/* Header */}
       <div style={{
         backgroundColor: 'white',
         borderBottom: '4px solid #10b981',
@@ -180,12 +194,7 @@ function App() {
         <div style={{maxWidth: '1200px', margin: '0 auto', padding: '24px'}}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
             <div>
-              <h1 style={{
-                margin: 0,
-                fontSize: '32px',
-                fontWeight: '800',
-                color: '#111827'
-              }}>
+              <h1 style={{margin: 0, fontSize: '32px', fontWeight: '800', color: '#111827'}}>
                 Draw Predictor <span style={{color: '#10b981'}}>Pro</span>
               </h1>
               <p style={{margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280', fontWeight: '500'}}>
@@ -246,6 +255,83 @@ function App() {
         </div>
       </div>
 
+      {/* ✅ DASHBOARD ANALYTICS SECTION - APPEARS ON MAIN PAGE */}
+      {dashboard && (
+        <div style={{
+          backgroundColor: 'white',
+          borderBottom: '2px solid #e5e7eb',
+          padding: '24px'
+        }}>
+          <div style={{maxWidth: '1200px', margin: '0 auto'}}>
+            <h2 style={{fontSize: '18px', fontWeight: '700', color: '#111827', marginBottom: '16px'}}>
+              📈 Analytics Dashboard
+            </h2>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '16px'
+            }}>
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#f0fdf4',
+                borderRadius: '12px',
+                border: '2px solid #10b981'
+              }}>
+                <p style={{margin: 0, fontSize: '12px', color: '#065f46', fontWeight: '600', textTransform: 'uppercase'}}>
+                  Overall Accuracy
+                </p>
+                <p style={{margin: '8px 0 0 0', fontSize: '32px', fontWeight: '800', color: '#10b981'}}>
+                  {dashboard.overall_stats?.accuracy || 0}%
+                </p>
+              </div>
+
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#eff6ff',
+                borderRadius: '12px',
+                border: '2px solid #3b82f6'
+              }}>
+                <p style={{margin: 0, fontSize: '12px', color: '#1e40af', fontWeight: '600', textTransform: 'uppercase'}}>
+                  Total Predictions
+                </p>
+                <p style={{margin: '8px 0 0 0', fontSize: '32px', fontWeight: '800', color: '#3b82f6'}}>
+                  {dashboard.overall_stats?.total_predictions || 0}
+                </p>
+              </div>
+
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#fef3c7',
+                borderRadius: '12px',
+                border: '2px solid #f59e0b'
+              }}>
+                <p style={{margin: 0, fontSize: '12px', color: '#92400e', fontWeight: '600', textTransform: 'uppercase'}}>
+                  Correct Predictions
+                </p>
+                <p style={{margin: '8px 0 0 0', fontSize: '32px', fontWeight: '800', color: '#f59e0b'}}>
+                  {dashboard.overall_stats?.correct_predictions || 0}
+                </p>
+              </div>
+
+              <div style={{
+                padding: '20px',
+                backgroundColor: '#f3f4f6',
+                borderRadius: '12px',
+                border: '2px solid #6b7280'
+              }}>
+                <p style={{margin: 0, fontSize: '12px', color: '#374151', fontWeight: '600', textTransform: 'uppercase'}}>
+                  AI Adjustment
+                </p>
+                <p style={{margin: '8px 0 0 0', fontSize: '32px', fontWeight: '800', color: '#6b7280'}}>
+                  {dashboard.learner_status?.adjustment >= 0 ? '+' : ''}{dashboard.learner_status?.adjustment || 0}%
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Content */}
       <div style={{maxWidth: '1200px', margin: '0 auto', padding: '32px'}}>
         {activeTab === 'daily' ? (
           <>
@@ -283,7 +369,7 @@ function App() {
               )}
             </div>
           </>
-          ) : (
+        ) : (
           <>
             <div style={{marginBottom: '32px'}}>
               <h2 style={{fontSize: '24px', fontWeight: '700', color: '#111827', marginBottom: '8px'}}>
@@ -319,6 +405,7 @@ function App() {
         )}
       </div>
 
+      {/* Footer */}
       <div style={{
         backgroundColor: '#111827',
         borderTop: '4px solid #10b981',
