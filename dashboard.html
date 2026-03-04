@@ -29,8 +29,8 @@
     </div>
 
    <script>
-    // Fetch from API instead of JSON file
-    fetch('/api/dashboard')
+    // Fetch from frontend folder (NOT API)
+    fetch('dashboard_data.json')
         .then(r => r.json())
         .then(data => {
             document.getElementById('accuracy').textContent = data.overall_stats.accuracy + '%';
