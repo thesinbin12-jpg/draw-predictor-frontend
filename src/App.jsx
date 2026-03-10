@@ -1,434 +1,701 @@
 import { useState, useEffect } from 'react'
 
-function App() {
-  const [daily, setDaily] = useState([])
-  const [weekly, setWeekly] = useState([])
-  const [dashboard, setDashboard] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('daily')
+const API = 'https://you-dont-know.onrender.com'
 
-  useEffect(() => {
-    // Fetch predictions
-    fetch('https://you-dont-know.onrender.com/predictions')
-      .then(res => res.json())
-      .then(data => {
-        setDaily(data.daily || [])
-        setWeekly(data.weekly || [])
-        
-        // Fetch dashboard analytics
-        fetch('https://you-dont-know.onrender.com/dashboard')
-          .then(res => res.json())
-          .then(dashData => {
-            setDashboard(dashData)
-            setLoading(false)
-          })
-          .catch(err => {
-            console.error('Dashboard error:', err)
-            setLoading(false)
-          })
-      })
-      .catch(err => {
-        console.error('Predictions error:', err)
-        setLoading(false)
-      })
-  }, [])
+const styles = `
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
-  if (loading) {
-    return (
-      <div style={{minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f9fafb'}}>
-        <div style={{fontSize: '20px', color: '#059669'}}>Loading predictions...</div>
-      </div>
-    )
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #00e87a;
+    --green-dim: #00c463;
+    --green-glow: rgba(0, 232, 122, 0.18);
+    --green-subtle: rgba(0, 232, 122, 0.07);
+    --red: #ff4b4b;
+    --blue: #3b8bff;
+    --bg: #080d0f;
+    --bg2: #0d1517;
+    --bg3: #131e21;
+    --border: rgba(255,255,255,0.07);
+    --border-green: rgba(0, 232, 122, 0.25);
+    --text: #f0f4f5;
+    --text-muted: #5a7278;
+    --text-mid: #8aa4ab;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
   }
 
-  const getConfidenceColor = (confidence) => {
-    if (confidence >= 80) return '#10b981'
-    if (confidence >= 60) return '#3b82f6'
-    return '#6b7280'
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 
-  const MatchCard = ({ match }) => (
-    <div style={{
-      backgroundColor: 'white',
-      borderRadius: '16px',
-      padding: '24px',
-      border: '2px solid #e5e7eb',
-      boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
-      transition: 'all 0.3s ease',
-      cursor: 'pointer'
-    }}
-    onMouseEnter={(e) => {
-      e.currentTarget.style.borderColor = '#10b981'
-      e.currentTarget.style.transform = 'translateY(-4px)'
-      e.currentTarget.style.boxShadow = '0 12px 24px rgba(16, 185, 129, 0.15)'
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.borderColor = '#e5e7eb'
-      e.currentTarget.style.transform = 'translateY(0)'
-      e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)'
-    }}>
-      
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
-        <span style={{
-          backgroundColor: '#f3f4f6',
-          color: '#374151',
-          padding: '6px 12px',
-          borderRadius: '20px',
-          fontSize: '12px',
-          fontWeight: '600',
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px'
-        }}>
-          {match.league_id || 'League'}
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border-green); border-radius: 4px; }
+
+  /* ── Grid noise background ── */
+  .noise-bg {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.4;
+  }
+
+  .glow-orb {
+    position: fixed; z-index: 0; pointer-events: none;
+    border-radius: 50%; filter: blur(120px); opacity: 0.12;
+  }
+  .glow-orb-1 {
+    width: 600px; height: 600px;
+    background: var(--green);
+    top: -200px; left: -200px;
+  }
+  .glow-orb-2 {
+    width: 400px; height: 400px;
+    background: var(--blue);
+    bottom: 100px; right: -100px;
+  }
+
+  /* ── Layout ── */
+  .wrapper { position: relative; z-index: 1; }
+
+  /* ── Header ── */
+  .header {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(8, 13, 15, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 72px; gap: 24px;
+  }
+  .logo-block { display: flex; align-items: center; gap: 14px; }
+  .logo-icon {
+    width: 42px; height: 42px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--green), var(--green-dim));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; box-shadow: 0 0 20px var(--green-glow);
+  }
+  .logo-title {
+    font-family: var(--font-display);
+    font-size: 26px; letter-spacing: 2px;
+    color: var(--text); line-height: 1;
+  }
+  .logo-title span { color: var(--green); }
+  .logo-sub {
+    font-size: 11px; color: var(--text-muted);
+    font-family: var(--font-mono); letter-spacing: 1px;
+    text-transform: uppercase; margin-top: 2px;
+  }
+  .live-badge {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--green-subtle);
+    border: 1px solid var(--border-green);
+    padding: 6px 14px; border-radius: 6px;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--green); letter-spacing: 1.5px; text-transform: uppercase;
+  }
+  .live-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green);
+    animation: blink 1.8s ease-in-out infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; box-shadow: 0 0 6px var(--green); }
+    50% { opacity: 0.3; box-shadow: none; }
+  }
+
+  /* ── Tabs ── */
+  .tabs {
+    max-width: 1200px; margin: 0 auto;
+    padding: 28px 24px 0;
+    display: flex; gap: 6px;
+  }
+  .tab {
+    padding: 10px 22px; border-radius: 8px; border: 1px solid var(--border);
+    font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    background: transparent; color: var(--text-muted);
+    letter-spacing: 0.3px;
+  }
+  .tab:hover { border-color: var(--border-green); color: var(--text); }
+  .tab.active-green {
+    background: var(--green-subtle); border-color: var(--green);
+    color: var(--green); box-shadow: 0 0 16px var(--green-glow);
+  }
+  .tab.active-blue {
+    background: rgba(59,139,255,0.08); border-color: var(--blue);
+    color: var(--blue); box-shadow: 0 0 16px rgba(59,139,255,0.15);
+  }
+  .tab.active-purple {
+    background: rgba(139,92,246,0.08); border-color: #8b5cf6;
+    color: #8b5cf6; box-shadow: 0 0 16px rgba(139,92,246,0.15);
+  }
+
+  /* ── Stats Bar ── */
+  .stats-bar {
+    max-width: 1200px; margin: 0 auto;
+    padding: 20px 24px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  }
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px;
+    transition: border-color 0.2s;
+  }
+  .stat-card:hover { border-color: var(--border-green); }
+  .stat-label {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-family: var(--font-display); font-size: 36px;
+    letter-spacing: 1px; line-height: 1;
+  }
+  .stat-value.green { color: var(--green); }
+  .stat-value.blue  { color: var(--blue); }
+  .stat-value.amber { color: #f59e0b; }
+  .stat-value.muted { color: var(--text-mid); }
+
+  /* ── Content Area ── */
+  .content {
+    max-width: 1200px; margin: 0 auto;
+    padding: 8px 24px 60px;
+  }
+  .section-header { margin-bottom: 24px; }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 32px; letter-spacing: 2px; color: var(--text);
+    line-height: 1;
+  }
+  .section-title span { color: var(--green); }
+  .section-sub {
+    font-size: 13px; color: var(--text-muted);
+    margin-top: 6px; font-family: var(--font-mono);
+  }
+
+  /* ── Match Grid ── */
+  .match-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+  }
+
+  /* ── Match Card ── */
+  .match-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 16px; padding: 22px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative; overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+  }
+  .match-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .match-card:hover {
+    border-color: var(--border-green);
+    transform: translateY(-3px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 0 1px var(--border-green);
+  }
+  .match-card:hover::before { opacity: 1; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-top {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 18px;
+  }
+  .league-tag {
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--text-muted); letter-spacing: 1.5px;
+    text-transform: uppercase;
+    background: var(--bg3); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 4px;
+  }
+  .conf-badge {
+    font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+    padding: 5px 12px; border-radius: 6px;
+  }
+  .conf-high { background: var(--green-subtle); color: var(--green); border: 1px solid var(--border-green); }
+  .conf-mid  { background: rgba(59,139,255,0.08); color: var(--blue); border: 1px solid rgba(59,139,255,0.25); }
+  .conf-low  { background: rgba(90,114,120,0.15); color: var(--text-muted); border: 1px solid var(--border); }
+
+  .teams-row {
+    display: flex; align-items: center;
+    gap: 12px; margin-bottom: 20px;
+  }
+  .team { flex: 1; }
+  .team-name {
+    font-family: var(--font-body); font-size: 15px;
+    font-weight: 700; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.2; margin-bottom: 3px;
+  }
+  .team-side {
+    font-family: var(--font-mono); font-size: 9px;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
+  }
+  .team.away { text-align: right; }
+  .vs-block {
+    background: var(--bg3); border: 1px solid var(--border);
+    padding: 8px 12px; border-radius: 8px; flex-shrink: 0;
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text-muted); font-weight: 600;
+  }
+
+  /* Confidence bar */
+  .conf-row {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 6px;
+    font-size: 12px;
+  }
+  .conf-label { color: var(--text-muted); font-family: var(--font-mono); }
+  .conf-val { color: var(--green); font-family: var(--font-mono); font-weight: 600; }
+  .bar-track {
+    height: 4px; background: var(--bg3); border-radius: 4px;
+    overflow: hidden; margin-bottom: 14px;
+  }
+  .bar-fill {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, var(--green-dim), var(--green));
+    box-shadow: 0 0 8px var(--green-glow);
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Uncertainty + date */
+  .card-bottom {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 14px; border-top: 1px solid var(--border);
+  }
+  .uncertainty {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text-muted);
+  }
+  .uncertainty span { color: var(--text-mid); font-weight: 600; }
+  .match-date {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ── Empty State ── */
+  .empty {
+    grid-column: 1 / -1;
+    background: var(--bg2); border: 1px dashed var(--border);
+    border-radius: 16px; padding: 64px 32px; text-align: center;
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 16px; }
+  .empty-title { font-size: 16px; font-weight: 600; color: var(--text-mid); margin-bottom: 8px; }
+  .empty-sub { font-size: 13px; color: var(--text-muted); font-family: var(--font-mono); }
+
+  /* ── Analytics Tab ── */
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .analytics-card {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px;
+  }
+  .analytics-card-title {
+    font-family: var(--font-mono); font-size: 11px;
+    text-transform: uppercase; letter-spacing: 1.5px;
+    color: var(--text-muted); margin-bottom: 18px;
+  }
+  .league-row {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 12px;
+  }
+  .league-name { font-size: 13px; font-weight: 600; color: var(--text); }
+  .league-rate {
+    font-family: var(--font-mono); font-size: 12px; color: var(--green);
+  }
+  .league-bar-track { flex: 1; height: 3px; background: var(--bg3); border-radius: 3px; margin: 0 12px; }
+  .league-bar-fill { height: 100%; background: var(--green); border-radius: 3px; }
+
+  .trend-row {
+    display: flex; align-items: center;
+    justify-content: space-between; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .trend-row:last-child { border-bottom: none; }
+  .trend-date { font-family: var(--font-mono); color: var(--text-muted); }
+  .trend-stats { color: var(--text-mid); }
+  .trend-rate { font-family: var(--font-mono); font-weight: 600; }
+  .trend-rate.good { color: var(--green); }
+  .trend-rate.bad  { color: var(--red); }
+  .trend-rate.mid  { color: #f59e0b; }
+
+  /* ── Loading ── */
+  .loading-screen {
+    min-height: 100vh; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 20px;
+    background: var(--bg);
+  }
+  .loading-logo {
+    font-family: var(--font-display); font-size: 48px;
+    letter-spacing: 4px; color: var(--text);
+  }
+  .loading-logo span { color: var(--green); }
+  .loading-bar {
+    width: 200px; height: 2px; background: var(--bg3);
+    border-radius: 2px; overflow: hidden;
+  }
+  .loading-bar-fill {
+    height: 100%; width: 40%;
+    background: var(--green);
+    animation: slide 1.2s ease-in-out infinite;
+  }
+  @keyframes slide {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+  .loading-text {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 24px;
+    text-align: center;
+  }
+  .footer-text {
+    font-family: var(--font-mono); font-size: 11px;
+    color: var(--text-muted); letter-spacing: 0.5px;
+  }
+  .footer-text a { color: var(--green); text-decoration: none; }
+  .footer-text a:hover { text-decoration: underline; }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .match-grid { grid-template-columns: 1fr; }
+    .analytics-grid { grid-template-columns: 1fr; }
+    .logo-title { font-size: 22px; }
+    .header-inner { height: 60px; }
+  }
+  @media (max-width: 480px) {
+    .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .tabs { flex-wrap: wrap; }
+    .tab { font-size: 12px; padding: 8px 14px; }
+  }
+`
+
+function getConfClass(conf) {
+  if (conf >= 70) return 'conf-high'
+  if (conf >= 50) return 'conf-mid'
+  return 'conf-low'
+}
+
+function MatchCard({ match, index }) {
+  return (
+    <div className="match-card" style={{ animationDelay: `${index * 0.06}s` }}>
+      <div className="card-top">
+        <span className="league-tag">{match.league_id || '—'}</span>
+        <span className={`conf-badge ${getConfClass(match.confidence)}`}>
+          pb {match.confidence}
         </span>
-        <span style={{
-          backgroundColor: getConfidenceColor(match.confidence),
-          color: 'white',
-          padding: '6px 16px',
-          borderRadius: '20px',
-          fontSize: '14px',
-          fontWeight: '700'
-        }}>
-          {match.confidence}%
+      </div>
+
+      <div className="teams-row">
+        <div className="team">
+          <div className="team-name">{match.home_team}</div>
+          <div className="team-side">Home</div>
+        </div>
+        <div className="vs-block">VS</div>
+        <div className="team away">
+          <div className="team-name">{match.away_team}</div>
+          <div className="team-side">Away</div>
+        </div>
+      </div>
+
+      <div className="conf-row">
+        <span className="conf-label">Draw probability</span>
+        <span className="conf-val">pb {match.confidence}</span>
+      </div>
+      <div className="bar-track">
+        <div className="bar-fill" style={{ width: `${match.confidence}%` }} />
+      </div>
+
+      <div className="card-bottom">
+        <span className="uncertainty">
+          Margin <span>±{match.uncertainty_margin || 0}</span>
         </span>
-      </div>
-
-      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px'}}>
-        <div style={{flex: 1, textAlign: 'left'}}>
-          <h3 style={{margin: 0, fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '4px'}}>
-            {match.home_team}
-          </h3>
-          <p style={{margin: 0, fontSize: '12px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase'}}>
-            Home
-          </p>
-        </div>
-        
-        <div style={{
-          backgroundColor: '#f3f4f6',
-          padding: '12px 20px',
-          borderRadius: '12px',
-          margin: '0 16px'
-        }}>
-          <span style={{color: '#6b7280', fontWeight: '700', fontSize: '16px'}}>VS</span>
-        </div>
-
-        <div style={{flex: 1, textAlign: 'right'}}>
-          <h3 style={{margin: 0, fontSize: '20px', fontWeight: '700', color: '#111827', marginBottom: '4px'}}>
-            {match.away_team}
-          </h3>
-          <p style={{margin: 0, fontSize: '12px', color: '#9ca3af', fontWeight: '600', textTransform: 'uppercase'}}>
-            Away
-          </p>
-        </div>
-      </div>
-
-      <div style={{marginBottom: '20px'}}>
-        <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '14px'}}>
-          <span style={{color: '#4b5563', fontWeight: '500'}}>Draw Confidence</span>
-          <span style={{color: '#111827', fontWeight: '700'}}>{match.confidence}%</span>
-        </div>
-        <div style={{
-          width: '100%',
-          height: '10px',
-          backgroundColor: '#e5e7eb',
-          borderRadius: '10px',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            width: `${match.confidence}%`,
-            height: '100%',
-            backgroundColor: getConfidenceColor(match.confidence),
-            borderRadius: '10px',
-            transition: 'width 0.5s ease'
-          }}></div>
-        </div>
-      </div>
-
-      <div style={{
-        marginBottom: '20px',
-        padding: '12px',
-        backgroundColor: '#f9fafb',
-        borderRadius: '8px',
-        border: '1px solid #e5e7eb'
-      }}>
-        <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '13px'}}>
-          <span style={{color: '#6b7280', fontWeight: '500'}}>Uncertainty Margin</span>
-          <span style={{color: '#111827', fontWeight: '700'}}>
-            ±{match.uncertainty_margin || 0}%
-          </span>
-        </div>
-        <p style={{margin: '4px 0 0 0', fontSize: '11px', color: '#9ca3af'}}>
-          Lower margin = More reliable prediction
-        </p>
-      </div>
-
-      <div style={{
-        paddingTop: '16px',
-        borderTop: '2px solid #f3f4f6',
-        textAlign: 'center'
-      }}>
-        <span style={{color: '#6b7280', fontSize: '14px', fontWeight: '500'}}>
-          {new Date(match.match_date).toLocaleDateString('en-US', { 
-            weekday: 'short', 
-            month: 'short', 
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+        <span className="match-date">
+          {new Date(match.match_date).toLocaleDateString('en-GB', {
+            weekday: 'short', day: 'numeric', month: 'short',
+            hour: '2-digit', minute: '2-digit'
           })}
         </span>
       </div>
     </div>
   )
+}
 
+function EmptyState({ message }) {
   return (
-    <div style={{minHeight: '100vh', backgroundColor: '#f9fafb'}}>
-      {/* Header */}
-      <div style={{
-        backgroundColor: 'white',
-        borderBottom: '4px solid #10b981',
-        position: 'sticky',
-        top: 0,
-        zIndex: 50,
-        boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
-      }}>
-        <div style={{maxWidth: '1200px', margin: '0 auto', padding: '24px'}}>
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
-            <div>
-              <h1 style={{margin: 0, fontSize: '32px', fontWeight: '800', color: '#111827'}}>
-                Draw Predictor <span style={{color: '#10b981'}}>Pro</span>
-              </h1>
-              <p style={{margin: '4px 0 0 0', fontSize: '14px', color: '#6b7280', fontWeight: '500'}}>
-                AI-Powered Draw Analytics
-              </p>
-            </div>
-            <div style={{
-              backgroundColor: '#d1fae5',
-              border: '2px solid #10b981',
-              padding: '8px 16px',
-              borderRadius: '8px'
-            }}>
-              <span style={{color: '#065f46', fontSize: '14px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px'}}>
-                <span style={{width: '8px', height: '8px', backgroundColor: '#10b981', borderRadius: '50%', display: 'inline-block', animation: 'pulse 2s infinite'}}></span>
-                LIVE
-              </span>
-            </div>
-          </div>
-
-          <div style={{display: 'flex', gap: '12px'}}>
-            <button
-              onClick={() => setActiveTab('daily')}
-              style={{
-                flex: 1,
-                padding: '14px 24px',
-                borderRadius: '12px',
-                border: 'none',
-                fontSize: '15px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                backgroundColor: activeTab === 'daily' ? '#10b981' : '#f3f4f6',
-                color: activeTab === 'daily' ? 'white' : '#6b7280',
-                transition: 'all 0.3s ease',
-                boxShadow: activeTab === 'daily' ? '0 4px 12px rgba(16, 185, 129, 0.3)' : 'none'
-              }}
-            >
-              📅 Daily Picks
-            </button>
-            <button
-              onClick={() => setActiveTab('weekly')}
-              style={{
-                flex: 1,
-                padding: '14px 24px',
-                borderRadius: '12px',
-                border: 'none',
-                fontSize: '15px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                backgroundColor: activeTab === 'weekly' ? '#3b82f6' : '#f3f4f6',
-                color: activeTab === 'weekly' ? 'white' : '#6b7280',
-                transition: 'all 0.3s ease',
-                boxShadow: activeTab === 'weekly' ? '0 4px 12px rgba(59, 130, 246, 0.3)' : 'none'
-              }}
-            >
-              📊 7-Day Outlook
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ✅ DASHBOARD ANALYTICS SECTION - APPEARS ON MAIN PAGE */}
-      {dashboard && (
-        <div style={{
-          backgroundColor: 'white',
-          borderBottom: '2px solid #e5e7eb',
-          padding: '24px'
-        }}>
-          <div style={{maxWidth: '1200px', margin: '0 auto'}}>
-            <h2 style={{fontSize: '18px', fontWeight: '700', color: '#111827', marginBottom: '16px'}}>
-              📈 Analytics Dashboard
-            </h2>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '16px'
-            }}>
-              <div style={{
-                padding: '20px',
-                backgroundColor: '#f0fdf4',
-                borderRadius: '12px',
-                border: '2px solid #10b981'
-              }}>
-                <p style={{margin: 0, fontSize: '12px', color: '#065f46', fontWeight: '600', textTransform: 'uppercase'}}>
-                  Overall Accuracy
-                </p>
-                <p style={{margin: '8px 0 0 0', fontSize: '32px', fontWeight: '800', color: '#10b981'}}>
-                  {dashboard.overall_stats?.accuracy || 0}%
-                </p>
-              </div>
-
-              <div style={{
-                padding: '20px',
-                backgroundColor: '#eff6ff',
-                borderRadius: '12px',
-                border: '2px solid #3b82f6'
-              }}>
-                <p style={{margin: 0, fontSize: '12px', color: '#1e40af', fontWeight: '600', textTransform: 'uppercase'}}>
-                  Total Predictions
-                </p>
-                <p style={{margin: '8px 0 0 0', fontSize: '32px', fontWeight: '800', color: '#3b82f6'}}>
-                  {dashboard.overall_stats?.total_predictions || 0}
-                </p>
-              </div>
-
-              <div style={{
-                padding: '20px',
-                backgroundColor: '#fef3c7',
-                borderRadius: '12px',
-                border: '2px solid #f59e0b'
-              }}>
-                <p style={{margin: 0, fontSize: '12px', color: '#92400e', fontWeight: '600', textTransform: 'uppercase'}}>
-                  Correct Predictions
-                </p>
-                <p style={{margin: '8px 0 0 0', fontSize: '32px', fontWeight: '800', color: '#f59e0b'}}>
-                  {dashboard.overall_stats?.correct_predictions || 0}
-                </p>
-              </div>
-
-              <div style={{
-                padding: '20px',
-                backgroundColor: '#f3f4f6',
-                borderRadius: '12px',
-                border: '2px solid #6b7280'
-              }}>
-                <p style={{margin: 0, fontSize: '12px', color: '#374151', fontWeight: '600', textTransform: 'uppercase'}}>
-                  AI Adjustment
-                </p>
-                <p style={{margin: '8px 0 0 0', fontSize: '32px', fontWeight: '800', color: '#6b7280'}}>
-                  {dashboard.learner_status?.adjustment >= 0 ? '+' : ''}{dashboard.learner_status?.adjustment || 0}%
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Content */}
-      <div style={{maxWidth: '1200px', margin: '0 auto', padding: '32px'}}>
-        {activeTab === 'daily' ? (
-          <>
-            <div style={{marginBottom: '32px'}}>
-              <h2 style={{fontSize: '24px', fontWeight: '700', color: '#111827', marginBottom: '8px'}}>
-                Today's Picks
-              </h2>
-              <p style={{fontSize: '15px', color: '#6b7280'}}>
-                AI-selected draws for today ({daily.length} pick{daily.length !== 1 ? 's' : ''})
-              </p>
-            </div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-              gap: '24px'
-            }}>
-              {daily.length > 0 ? daily.map((match, i) => (
-                <MatchCard key={i} match={match} />
-              )) : (
-                <div style={{
-                  gridColumn: '1 / -1',
-                  textAlign: 'center',
-                  padding: '64px',
-                  backgroundColor: 'white',
-                  borderRadius: '16px',
-                  border: '2px solid #e5e7eb'
-                }}>
-                  <p style={{color: '#6b7280', fontSize: '16px', fontWeight: '500', marginBottom: '8px'}}>
-                    ⚠️ No predictions for today
-                  </p>
-                  <p style={{color: '#9ca3af', fontSize: '14px'}}>
-                    AI didn't find any high-confidence draws (60%+).<br/>Check back tomorrow!
-                  </p>
-                </div>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            <div style={{marginBottom: '32px'}}>
-              <h2 style={{fontSize: '24px', fontWeight: '700', color: '#111827', marginBottom: '8px'}}>
-                7-Day Rolling Outlook
-              </h2>
-              <p style={{fontSize: '15px', color: '#6b7280'}}>
-                {weekly.length} predictions for the week ahead
-              </p>
-            </div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-              gap: '24px'
-            }}>
-              {weekly.length > 0 ? weekly.map((match, i) => (
-                <MatchCard key={i} match={match} />
-              )) : (
-                <div style={{
-                  gridColumn: '1 / -1',
-                  textAlign: 'center',
-                  padding: '64px',
-                  backgroundColor: 'white',
-                  borderRadius: '16px',
-                  border: '2px solid #e5e7eb'
-                }}>
-                  <p style={{color: '#6b7280', fontSize: '16px', fontWeight: '500'}}>
-                    No weekly predictions yet.
-                  </p>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Footer */}
-      <div style={{
-        backgroundColor: '#111827',
-        borderTop: '4px solid #10b981',
-        padding: '24px',
-        marginTop: '64px',
-        textAlign: 'center'
-      }}>
-        <p style={{color: '#9ca3af', fontSize: '14px', margin: 0}}>
-          AI updates daily at 11 PM UTC • Data from football-data.org
-        </p>
-        <p style={{color: '#6b7280', fontSize: '12px', marginTop: '8px', margin: 0}}>
-          Powered by Machine Learning • Built for Precision
-        </p>
-      </div>
-
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
-        }
-      `}</style>
+    <div className="empty">
+      <div className="empty-icon">⚡</div>
+      <div className="empty-title">{message}</div>
+      <div className="empty-sub">My model updates daily at 23:00 UTC</div>
     </div>
   )
 }
 
-export default App
+export default function App() {
+  const [daily, setDaily]       = useState([])
+  const [weekly, setWeekly]     = useState([])
+  const [dashboard, setDashboard] = useState(null)
+  const [loading, setLoading]   = useState(true)
+  const [activeTab, setActiveTab] = useState('daily')
+
+  useEffect(() => {
+    Promise.all([
+      fetch(`${API}/predictions`).then(r => r.json()),
+      fetch(`${API}/dashboard`).then(r => r.json()),
+    ])
+      .then(([pred, dash]) => {
+        setDaily(pred.daily || [])
+        setWeekly(pred.weekly || [])
+        setDashboard(dash)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return (
+    <>
+      <style>{styles}</style>
+      <div className="loading-screen">
+        <div className="loading-logo">DRAW <span>SIGNAL</span></div>
+        <div className="loading-bar"><div className="loading-bar-fill" /></div>
+        <div className="loading-text">Loading predictions...</div>
+      </div>
+    </>
+  )
+
+  const stats = dashboard?.overall_stats
+  const learner = dashboard?.learner_status
+  const topLeagues = dashboard?.top_leagues || []
+  const trend = dashboard?.weekly_trend || []
+
+  return (
+    <>
+      <style>{styles}</style>
+      <div className="noise-bg" />
+      <div className="glow-orb glow-orb-1" />
+      <div className="glow-orb glow-orb-2" />
+
+      <div className="wrapper">
+        {/* ── Header ── */}
+        <header className="header">
+          <div className="header-inner">
+            <div className="logo-block">
+              <div className="logo-icon">⚽</div>
+              <div>
+                <div className="logo-title">DRAW <span>SIGNAL</span></div>
+                <div className="logo-sub">Probabilistic · Transparent · Self-learning</div>
+              </div>
+            </div>
+            <div className="live-badge">
+              <span className="live-dot" />
+              Live
+            </div>
+          </div>
+        </header>
+
+        {/* ── Stats Bar ── */}
+        {stats && (
+          <div className="stats-bar">
+            <div className="stat-card">
+              <div className="stat-label">Draw Hit-Rate</div>
+              <div className="stat-value green">{stats.draw_hit_rate ?? stats.accuracy ?? 0}%</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Total Predictions</div>
+              <div className="stat-value blue">{stats.total_predictions ?? 0}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Draws Correct</div>
+              <div className="stat-value amber">{stats.draws_correct ?? stats.correct_predictions ?? 0}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Model Adjustment</div>
+              <div className="stat-value muted">
+                {(learner?.adjustment ?? 0) >= 0 ? '+' : ''}{learner?.adjustment ?? 0}%
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Tabs ── */}
+        <div className="tabs">
+          {[
+            { id: 'daily',     label: '📅  Daily Picks',    cls: 'active-green'  },
+            { id: 'weekly',    label: '📆  7-Day Outlook',  cls: 'active-blue'   },
+            { id: 'analytics', label: '📈  Analytics',      cls: 'active-purple' },
+          ].map(t => (
+            <button
+              key={t.id}
+              className={`tab ${activeTab === t.id ? t.cls : ''}`}
+              onClick={() => setActiveTab(t.id)}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Content ── */}
+        <div className="content">
+
+          {activeTab === 'daily' && (
+            <>
+              <div className="section-header">
+                <div className="section-title">TODAY'S <span>PICKS</span></div>
+                <div className="section-sub">
+                  {daily.length} draw signal{daily.length !== 1 ? 's' : ''} selected by my model
+                </div>
+              </div>
+              <div className="match-grid">
+                {daily.length > 0
+                  ? daily.map((m, i) => <MatchCard key={i} match={m} index={i} />)
+                  : <EmptyState message="No picks for today yet" />
+                }
+              </div>
+            </>
+          )}
+
+          {activeTab === 'weekly' && (
+            <>
+              <div className="section-header">
+                <div className="section-title">7-DAY <span>OUTLOOK</span></div>
+                <div className="section-sub">
+                  {weekly.length} predictions for the week ahead
+                </div>
+              </div>
+              <div className="match-grid">
+                {weekly.length > 0
+                  ? weekly.map((m, i) => <MatchCard key={i} match={m} index={i} />)
+                  : <EmptyState message="No weekly predictions yet" />
+                }
+              </div>
+            </>
+          )}
+
+          {activeTab === 'analytics' && (
+            <>
+              <div className="section-header">
+                <div className="section-title">MODEL <span>ANALYTICS</span></div>
+                <div className="section-sub">Full transparency — every result tracked</div>
+              </div>
+              <div className="analytics-grid">
+
+                {/* Top Leagues */}
+                <div className="analytics-card">
+                  <div className="analytics-card-title">Draw hit-rate by league</div>
+                  {topLeagues.length > 0 ? topLeagues.map((l, i) => (
+                    <div key={i} className="league-row">
+                      <span className="league-name">{l.league}</span>
+                      <div className="league-bar-track">
+                        <div className="league-bar-fill" style={{ width: `${l.draw_hit_rate ?? l.accuracy ?? 0}%` }} />
+                      </div>
+                      <span className="league-rate">{l.draw_hit_rate ?? l.accuracy ?? 0}%</span>
+                    </div>
+                  )) : (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-mono)' }}>
+                      No league data yet
+                    </div>
+                  )}
+                </div>
+
+                {/* Weekly Trend */}
+                <div className="analytics-card">
+                  <div className="analytics-card-title">7-day accuracy trend</div>
+                  {trend.length > 0 ? trend.map((d, i) => {
+                    const rate = d.draw_hit_rate ?? d.accuracy ?? 0
+                    return (
+                      <div key={i} className="trend-row">
+                        <span className="trend-date">{d.date}</span>
+                        <span className="trend-stats">{d.draws_correct ?? d.correct ?? 0}/{d.total}</span>
+                        <span className={`trend-rate ${rate >= 40 ? 'good' : rate >= 20 ? 'mid' : 'bad'}`}>
+                          {rate}%
+                        </span>
+                      </div>
+                    )
+                  }) : (
+                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-mono)' }}>
+                      No trend data yet
+                    </div>
+                  )}
+                </div>
+
+                {/* Model Status */}
+                <div className="analytics-card" style={{ gridColumn: '1 / -1' }}>
+                  <div className="analytics-card-title">Model status</div>
+                  <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
+                    {[
+                      { label: 'Phase', value: stats?.total_predictions < 25 ? '1 — Calibration' : stats?.total_predictions < 50 ? '2 — Stabilization' : stats?.total_predictions < 100 ? '3 — Optimization' : '4 — Full Autonomy' },
+                      { label: 'Last Updated', value: learner?.last_updated ?? 'N/A' },
+                      { label: 'Confidence Adj', value: `${(learner?.adjustment ?? 0) >= 0 ? '+' : ''}${learner?.adjustment ?? 0}%` },
+                      { label: 'Real Draw Rate (30d)', value: `${dashboard?.real_draw_rate?.real_draw_rate ?? '—'}%` },
+                    ].map((item, i) => (
+                      <div key={i}>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>
+                          {item.label}
+                        </div>
+                        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', color: 'var(--text)', fontWeight: 600 }}>
+                          {item.value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            </>
+          )}
+
+        </div>
+
+        {/* ── Footer ── */}
+        <footer className="footer">
+          <div className="footer-text">
+            My model updates daily at 23:00 UTC · Data from football-data.org ·{' '}
+            <a href="https://t.me/Drawsignalai" target="_blank" rel="noreferrer">
+              t.me/Drawsignalai
+            </a>
+          </div>
+          <div className="footer-text" style={{ marginTop: '6px', opacity: 0.5 }}>
+            Bet responsibly · Draw Signal PB · Free during calibration phase
+          </div>
+        </footer>
+      </div>
+    </>
+  )
+}
