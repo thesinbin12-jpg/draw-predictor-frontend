@@ -2,6 +2,34 @@ import { useState, useEffect } from 'react'
 
 const API = 'https://you-dont-know.onrender.com'
 
+// ── League ID → Human name ────────────────────────────────────
+const LEAGUE_NAMES = {
+  'PL':   'Premier League',    '2021': 'Premier League',
+  'PD':   'La Liga',           '2014': 'La Liga',
+  'BL1':  'Bundesliga',        '2002': 'Bundesliga',
+  'SA':   'Serie A',           '2019': 'Serie A',
+  'FL1':  'Ligue 1',           '2015': 'Ligue 1',
+  'CL':   'Champions League',  '2001': 'Champions League',
+  'ELC':  'Championship',      '2016': 'Championship',
+  'DED':  'Eredivisie',        '2003': 'Eredivisie',
+  'PPL':  'Primeira Liga',     '2017': 'Primeira Liga',
+  'BSA':  'Brasileirao',       '2013': 'Brasileirao',
+                               '2152': 'Copa Libertadores',
+}
+const leagueName = (id) => LEAGUE_NAMES[id] || id || '—'
+
+// ── Date + time formatter ─────────────────────────────────────
+const formatMatchDate = (raw) => {
+  if (!raw) return '—'
+  try {
+    const d = new Date(raw)
+    if (isNaN(d.getTime())) return '—'
+    const day  = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+    const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    return `${day}, ${time}`
+  } catch { return '—' }
+}
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
 
@@ -394,16 +422,33 @@ const styles = `
 
   /* ── Responsive ── */
   @media (max-width: 768px) {
-    .stats-bar { grid-template-columns: repeat(2, 1fr); }
+    .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 8px; padding: 12px 16px; }
     .match-grid { grid-template-columns: 1fr; }
     .analytics-grid { grid-template-columns: 1fr; }
-    .logo-title { font-size: 22px; }
-    .header-inner { height: 60px; }
+    .logo-sub { display: none; }
+    .header { padding: 0 16px; }
+    .header-inner { height: 56px; gap: 12px; }
+    .logo-icon { width: 34px; height: 34px; font-size: 16px; }
+    .logo-title { font-size: 20px; }
+    .live-badge { padding: 4px 10px; font-size: 9px; }
+    .tabs { padding: 12px 16px 0; gap: 6px; }
+    .tab { flex: 1; font-size: 11px; padding: 9px 6px; text-align: center; }
+    .content { padding: 12px 16px 60px; }
+    .stats-bar { padding: 12px 16px; }
+    .stat-value { font-size: 28px; }
+    .stat-label { font-size: 8px; }
+    .section-title { font-size: 26px; }
+    .match-card { padding: 16px; }
+    .team-name { font-size: 13px; }
+    .league-tag { font-size: 9px; max-width: 52%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card-bottom { flex-direction: column; align-items: flex-start; gap: 6px; }
+    .match-date { font-size: 10px; }
+    .analytics-card { padding: 16px; }
   }
-  @media (max-width: 480px) {
-    .stats-bar { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .tabs { flex-wrap: wrap; }
-    .tab { font-size: 12px; padding: 8px 14px; }
+  @media (max-width: 360px) {
+    .logo-title { font-size: 18px; }
+    .stat-value { font-size: 24px; }
+    .tab { font-size: 10px; padding: 8px 4px; }
   }
 `
 
@@ -417,7 +462,7 @@ function MatchCard({ match, index }) {
   return (
     <div className="match-card" style={{ animationDelay: `${index * 0.06}s` }}>
       <div className="card-top">
-        <span className="league-tag">{match.league_id || '—'}</span>
+        <span className="league-tag">{leagueName(match.league_id)}</span>
         <span className={`conf-badge ${getConfClass(match.confidence)}`}>
           pb {match.confidence}
         </span>
@@ -448,10 +493,7 @@ function MatchCard({ match, index }) {
           Margin <span>±{match.uncertainty_margin || 0}</span>
         </span>
         <span className="match-date">
-          {new Date(match.match_date).toLocaleDateString('en-GB', {
-            weekday: 'short', day: 'numeric', month: 'short',
-            hour: '2-digit', minute: '2-digit'
-          })}
+          {formatMatchDate(match.match_date)}
         </span>
       </div>
     </div>
@@ -621,7 +663,7 @@ export default function App() {
                   <div className="analytics-card-title">Draw hit-rate by league</div>
                   {topLeagues.length > 0 ? topLeagues.map((l, i) => (
                     <div key={i} className="league-row">
-                      <span className="league-name">{l.league}</span>
+                      <span className="league-name">{leagueName(l.league)}</span>
                       <div className="league-bar-track">
                         <div className="league-bar-fill" style={{ width: `${l.draw_hit_rate ?? l.accuracy ?? 0}%` }} />
                       </div>
