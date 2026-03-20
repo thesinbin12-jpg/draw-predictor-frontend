@@ -4,6 +4,7 @@ const API = 'https://you-dont-know.onrender.com'
 
 // ── League ID → Human name ────────────────────────────────────
 const LEAGUE_NAMES = {
+  // football-data.org codes
   'PL':   'Premier League',    '2021': 'Premier League',
   'PD':   'La Liga',           '2014': 'La Liga',
   'BL1':  'Bundesliga',        '2002': 'Bundesliga',
@@ -15,6 +16,17 @@ const LEAGUE_NAMES = {
   'PPL':  'Primeira Liga',     '2017': 'Primeira Liga',
   'BSA':  'Brasileirao',       '2013': 'Brasileirao',
                                '2152': 'Copa Libertadores',
+  // API-Football expanded leagues
+  'af_94':  'Primeira Liga',
+  'af_144': 'Belgian Pro League',
+  'af_88':  'Eredivisie',
+  'af_203': 'Süper Lig',
+  'af_113': 'Allsvenskan',
+  'af_119': 'Superliga',
+  'af_307': 'Saudi Pro League',
+  'af_98':  'J1 League',
+  'af_292': 'K League 1',
+  'af_169': 'Chinese Super League',
 }
 const leagueName = (id) => LEAGUE_NAMES[id] || id || '—'
 
