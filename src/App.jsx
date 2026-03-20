@@ -496,6 +496,44 @@ function MatchCard({ match, index }) {
           {formatMatchDate(match.match_date)}
         </span>
       </div>
+
+      {/* ── Swarm Signal Panel ── */}
+      {match.swarm_signal != null && (
+        <div style={{
+          marginTop: '10px', paddingTop: '10px',
+          borderTop: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: '6px', flexWrap: 'wrap',
+        }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            🐠 10-Agent Swarm
+          </span>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600,
+            color: match.swarm_signal >= 60 ? 'var(--green)' : match.swarm_signal >= 40 ? '#f59e0b' : '#ff4b4b'
+          }}>
+            {match.swarm_signal}%
+          </span>
+          {match.swarm_agreement && (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: '9px', padding: '2px 6px', borderRadius: '4px',
+              background: match.swarm_agreement === 'HIGH' ? 'rgba(0,232,122,0.1)' : match.swarm_agreement === 'MEDIUM' ? 'rgba(245,158,11,0.1)' : 'rgba(255,75,75,0.1)',
+              color: match.swarm_agreement === 'HIGH' ? 'var(--green)' : match.swarm_agreement === 'MEDIUM' ? '#f59e0b' : '#ff4b4b',
+              border: `1px solid ${match.swarm_agreement === 'HIGH' ? 'rgba(0,232,122,0.3)' : match.swarm_agreement === 'MEDIUM' ? 'rgba(245,158,11,0.3)' : 'rgba(255,75,75,0.3)'}`,
+            }}>
+              {match.swarm_agreement} AGREE
+            </span>
+          )}
+          {match.swarm_override && (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: '9px', padding: '2px 6px', borderRadius: '4px',
+              background: 'rgba(139,92,246,0.12)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.3)',
+            }}>
+              ⚡ OVERRIDE
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
