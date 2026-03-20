@@ -546,6 +546,34 @@ function MatchCard({ match, index }) {
           )}
         </div>
       )}
+
+      {/* ── Draw Model Signal ── */}
+      {match.draw_model_signal != null && (
+        <div style={{
+          marginTop: '6px', paddingTop: '8px',
+          borderTop: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: '6px',
+        }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            🧬 Draw Model
+          </span>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600,
+            color: match.draw_model_signal >= 60 ? 'var(--green)'
+                 : match.draw_model_signal >= 40 ? '#f59e0b'
+                 : '#ff4b4b'
+          }}>
+            {match.draw_model_signal}%
+          </span>
+          <span style={{
+            fontFamily: 'var(--font-mono)', fontSize: '9px',
+            color: 'var(--text-muted)', fontStyle: 'italic'
+          }}>
+            historian
+          </span>
+        </div>
+      )}
     </div>
   )
 }
