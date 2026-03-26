@@ -27,6 +27,20 @@ const LEAGUE_NAMES = {
   'af_98':  'J1 League',
   'af_292': 'K League 1',
   'af_169': 'Chinese Super League',
+  // International
+  'af_4':   'UEFA Euro',
+  'af_6':   'AFCON',
+  'af_29':  'Nations League A',
+  'af_30':  'Nations League B',
+  'af_31':  'Nations League C',
+  'af_10':  'FIFA World Cup',
+  'af_34':  'WCQ Europe',
+  'af_32':  'WCQ Africa',
+  'af_33':  'WCQ Asia',
+  'af_35':  'WCQ South America',
+  'af_20':  'AFCON Qualification',
+  'af_11':  'Copa America',
+  'af_13':  'CONMEBOL WCQ',
 }
 const leagueName = (id) => LEAGUE_NAMES[id] || id || '—'
 
