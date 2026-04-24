@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 
 const API = 'https://you-dont-know.onrender.com'
 
-// ── League ID → Human name ────────────────────────────────────
+// ── League ID → Human name ─────────────────────────────────────
 const LEAGUE_NAMES = {
-  // football-data.org codes
   'PL':   'Premier League',    '2021': 'Premier League',
   'PD':   'La Liga',           '2014': 'La Liga',
   'BL1':  'Bundesliga',        '2002': 'Bundesliga',
@@ -16,7 +15,6 @@ const LEAGUE_NAMES = {
   'PPL':  'Primeira Liga',     '2017': 'Primeira Liga',
   'BSA':  'Brasileirao',       '2013': 'Brasileirao',
                                '2152': 'Copa Libertadores',
-  // API-Football expanded leagues
   'af_94':  'Primeira Liga',
   'af_144': 'Belgian Pro League',
   'af_88':  'Eredivisie',
@@ -27,7 +25,6 @@ const LEAGUE_NAMES = {
   'af_98':  'J1 League',
   'af_292': 'K League 1',
   'af_169': 'Chinese Super League',
-  // International
   'af_4':   'UEFA Euro',
   'af_6':   'AFCON',
   'af_29':  'Nations League A',
@@ -42,9 +39,10 @@ const LEAGUE_NAMES = {
   'af_11':  'Copa America',
   'af_13':  'CONMEBOL WCQ',
 }
+
 const leagueName = (id) => LEAGUE_NAMES[id] || id || '—'
 
-// ── Date + time formatter ─────────────────────────────────────
+// ── Date + time formatter ──────────────────────────────────────
 const formatMatchDate = (raw) => {
   if (!raw) return '—'
   try {
@@ -56,11 +54,21 @@ const formatMatchDate = (raw) => {
   } catch { return '—' }
 }
 
+// ── Format last-updated timestamp ─────────────────────────────
+const formatLastUpdated = (isoString) => {
+  if (!isoString) return null
+  try {
+    const d = new Date(isoString)
+    if (isNaN(d.getTime())) return null
+    return d.toLocaleTimeString('en-GB', {
+      hour: '2-digit', minute: '2-digit', timeZone: 'UTC'
+    }) + ' UTC'
+  } catch { return null }
+}
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
-
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
   :root {
     --green: #00e87a;
     --green-dim: #00c463;
@@ -68,6 +76,7 @@ const styles = `
     --green-subtle: rgba(0, 232, 122, 0.07);
     --red: #ff4b4b;
     --blue: #3b8bff;
+    --amber: #f59e0b;
     --bg: #080d0f;
     --bg2: #0d1517;
     --bg3: #131e21;
@@ -80,9 +89,7 @@ const styles = `
     --font-body: 'DM Sans', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
   }
-
   html { scroll-behavior: smooth; }
-
   body {
     background: var(--bg);
     color: var(--text);
@@ -90,13 +97,10 @@ const styles = `
     min-height: 100vh;
     overflow-x: hidden;
   }
-
-  /* ── Scrollbar ── */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: var(--bg); }
   ::-webkit-scrollbar-thumb { background: var(--border-green); border-radius: 4px; }
 
-  /* ── Grid noise background ── */
   .noise-bg {
     position: fixed; inset: 0; z-index: 0; pointer-events: none;
     background-image:
@@ -105,24 +109,45 @@ const styles = `
     background-size: 40px 40px;
     opacity: 0.4;
   }
-
   .glow-orb {
     position: fixed; z-index: 0; pointer-events: none;
     border-radius: 50%; filter: blur(120px); opacity: 0.12;
   }
-  .glow-orb-1 {
-    width: 600px; height: 600px;
-    background: var(--green);
-    top: -200px; left: -200px;
-  }
-  .glow-orb-2 {
-    width: 400px; height: 400px;
-    background: var(--blue);
-    bottom: 100px; right: -100px;
-  }
+  .glow-orb-1 { width: 600px; height: 600px; background: var(--green); top: -200px; left: -200px; }
+  .glow-orb-2 { width: 400px; height: 400px; background: var(--blue); bottom: 100px; right: -100px; }
 
-  /* ── Layout ── */
   .wrapper { position: relative; z-index: 1; }
+
+  /* ── Status Banner ── */
+  .status-banner {
+    width: 100%;
+    padding: 8px 24px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.8px;
+    border-bottom: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  .status-banner.ok {
+    background: rgba(0, 232, 122, 0.05);
+    color: var(--green);
+    border-color: rgba(0, 232, 122, 0.15);
+  }
+  .status-banner.pending {
+    background: rgba(245, 158, 11, 0.05);
+    color: var(--amber);
+    border-color: rgba(245, 158, 11, 0.15);
+  }
+  .status-banner.error {
+    background: rgba(255, 75, 75, 0.05);
+    color: var(--red);
+    border-color: rgba(255, 75, 75, 0.15);
+  }
+  .status-dot {
+    width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  }
+  .status-dot.ok      { background: var(--green); box-shadow: 0 0 6px var(--green); animation: blink 2s ease-in-out infinite; }
+  .status-dot.pending { background: var(--amber); }
+  .status-dot.error   { background: var(--red); }
 
   /* ── Header ── */
   .header {
@@ -187,18 +212,9 @@ const styles = `
     letter-spacing: 0.3px;
   }
   .tab:hover { border-color: var(--border-green); color: var(--text); }
-  .tab.active-green {
-    background: var(--green-subtle); border-color: var(--green);
-    color: var(--green); box-shadow: 0 0 16px var(--green-glow);
-  }
-  .tab.active-blue {
-    background: rgba(59,139,255,0.08); border-color: var(--blue);
-    color: var(--blue); box-shadow: 0 0 16px rgba(59,139,255,0.15);
-  }
-  .tab.active-purple {
-    background: rgba(139,92,246,0.08); border-color: #8b5cf6;
-    color: #8b5cf6; box-shadow: 0 0 16px rgba(139,92,246,0.15);
-  }
+  .tab.active-green  { background: var(--green-subtle); border-color: var(--green); color: var(--green); box-shadow: 0 0 16px var(--green-glow); }
+  .tab.active-blue   { background: rgba(59,139,255,0.08); border-color: var(--blue); color: var(--blue); box-shadow: 0 0 16px rgba(59,139,255,0.15); }
+  .tab.active-purple { background: rgba(139,92,246,0.08); border-color: #8b5cf6; color: #8b5cf6; box-shadow: 0 0 16px rgba(139,92,246,0.15); }
 
   /* ── Stats Bar ── */
   .stats-bar {
@@ -207,195 +223,84 @@ const styles = `
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
   }
   .stat-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: 12px; padding: 18px 20px;
-    transition: border-color 0.2s;
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; transition: border-color 0.2s;
   }
   .stat-card:hover { border-color: var(--border-green); }
-  .stat-label {
-    font-family: var(--font-mono); font-size: 10px;
-    color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px;
-    margin-bottom: 8px;
-  }
-  .stat-value {
-    font-family: var(--font-display); font-size: 36px;
-    letter-spacing: 1px; line-height: 1;
-  }
+  .stat-label { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 8px; }
+  .stat-value { font-family: var(--font-display); font-size: 36px; letter-spacing: 1px; line-height: 1; }
   .stat-value.green { color: var(--green); }
   .stat-value.blue  { color: var(--blue); }
   .stat-value.amber { color: #f59e0b; }
   .stat-value.muted { color: var(--text-mid); }
 
-  /* ── Content Area ── */
-  .content {
-    max-width: 1200px; margin: 0 auto;
-    padding: 8px 24px 60px;
-  }
+  /* ── Content ── */
+  .content { max-width: 1200px; margin: 0 auto; padding: 8px 24px 60px; }
   .section-header { margin-bottom: 24px; }
-  .section-title {
-    font-family: var(--font-display);
-    font-size: 32px; letter-spacing: 2px; color: var(--text);
-    line-height: 1;
-  }
+  .section-title { font-family: var(--font-display); font-size: 32px; letter-spacing: 2px; color: var(--text); line-height: 1; }
   .section-title span { color: var(--green); }
-  .section-sub {
-    font-size: 13px; color: var(--text-muted);
-    margin-top: 6px; font-family: var(--font-mono);
-  }
+  .section-sub { font-size: 13px; color: var(--text-muted); margin-top: 6px; font-family: var(--font-mono); }
 
   /* ── Match Grid ── */
-  .match-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 16px;
-  }
+  .match-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
 
   /* ── Match Card ── */
   .match-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
+    background: var(--bg2); border: 1px solid var(--border);
     border-radius: 16px; padding: 22px;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative; overflow: hidden;
     animation: fadeUp 0.4s ease both;
   }
   .match-card::before {
-    content: ''; position: absolute;
-    top: 0; left: 0; right: 0; height: 1px;
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
     background: linear-gradient(90deg, transparent, var(--green), transparent);
     opacity: 0; transition: opacity 0.3s;
   }
-  .match-card:hover {
-    border-color: var(--border-green);
-    transform: translateY(-3px);
-    box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 0 1px var(--border-green);
-  }
+  .match-card:hover { border-color: var(--border-green); transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,0.4), 0 0 0 1px var(--border-green); }
   .match-card:hover::before { opacity: 1; }
-
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(16px); }
     to   { opacity: 1; transform: translateY(0); }
   }
-
-  .card-top {
-    display: flex; justify-content: space-between;
-    align-items: center; margin-bottom: 18px;
-  }
-  .league-tag {
-    font-family: var(--font-mono); font-size: 10px;
-    color: var(--text-muted); letter-spacing: 1.5px;
-    text-transform: uppercase;
-    background: var(--bg3); border: 1px solid var(--border);
-    padding: 4px 10px; border-radius: 4px;
-  }
-  .conf-badge {
-    font-family: var(--font-mono); font-size: 13px; font-weight: 600;
-    padding: 5px 12px; border-radius: 6px;
-  }
+  .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .league-tag { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; background: var(--bg3); border: 1px solid var(--border); padding: 4px 10px; border-radius: 4px; }
+  .conf-badge { font-family: var(--font-mono); font-size: 13px; font-weight: 600; padding: 5px 12px; border-radius: 6px; }
   .conf-high { background: var(--green-subtle); color: var(--green); border: 1px solid var(--border-green); }
   .conf-mid  { background: rgba(59,139,255,0.08); color: var(--blue); border: 1px solid rgba(59,139,255,0.25); }
   .conf-low  { background: rgba(90,114,120,0.15); color: var(--text-muted); border: 1px solid var(--border); }
-
-  .teams-row {
-    display: flex; align-items: center;
-    gap: 12px; margin-bottom: 20px;
-  }
+  .teams-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
   .team { flex: 1; }
-  .team-name {
-    font-family: var(--font-body); font-size: 15px;
-    font-weight: 700; color: var(--text);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    line-height: 1.2; margin-bottom: 3px;
-  }
-  .team-side {
-    font-family: var(--font-mono); font-size: 9px;
-    color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;
-  }
+  .team-name { font-family: var(--font-body); font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; margin-bottom: 3px; }
+  .team-side { font-family: var(--font-mono); font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
   .team.away { text-align: right; }
-  .vs-block {
-    background: var(--bg3); border: 1px solid var(--border);
-    padding: 8px 12px; border-radius: 8px; flex-shrink: 0;
-    font-family: var(--font-mono); font-size: 11px;
-    color: var(--text-muted); font-weight: 600;
-  }
-
-  /* Confidence bar */
-  .conf-row {
-    display: flex; justify-content: space-between;
-    align-items: center; margin-bottom: 6px;
-    font-size: 12px;
-  }
+  .vs-block { background: var(--bg3); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px; flex-shrink: 0; font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); font-weight: 600; }
+  .conf-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 12px; }
   .conf-label { color: var(--text-muted); font-family: var(--font-mono); }
   .conf-val { color: var(--green); font-family: var(--font-mono); font-weight: 600; }
-  .bar-track {
-    height: 4px; background: var(--bg3); border-radius: 4px;
-    overflow: hidden; margin-bottom: 14px;
-  }
-  .bar-fill {
-    height: 100%; border-radius: 4px;
-    background: linear-gradient(90deg, var(--green-dim), var(--green));
-    box-shadow: 0 0 8px var(--green-glow);
-    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  /* Uncertainty + date */
-  .card-bottom {
-    display: flex; justify-content: space-between; align-items: center;
-    padding-top: 14px; border-top: 1px solid var(--border);
-  }
-  .uncertainty {
-    font-family: var(--font-mono); font-size: 11px;
-    color: var(--text-muted);
-  }
+  .bar-track { height: 4px; background: var(--bg3); border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
+  .bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--green-dim), var(--green)); box-shadow: 0 0 8px var(--green-glow); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+  .card-bottom { display: flex; justify-content: space-between; align-items: center; padding-top: 14px; border-top: 1px solid var(--border); }
+  .uncertainty { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
   .uncertainty span { color: var(--text-mid); font-weight: 600; }
-  .match-date {
-    font-family: var(--font-mono); font-size: 11px;
-    color: var(--text-muted);
-  }
+  .match-date { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); }
 
   /* ── Empty State ── */
-  .empty {
-    grid-column: 1 / -1;
-    background: var(--bg2); border: 1px dashed var(--border);
-    border-radius: 16px; padding: 64px 32px; text-align: center;
-  }
+  .empty { grid-column: 1 / -1; background: var(--bg2); border: 1px dashed var(--border); border-radius: 16px; padding: 64px 32px; text-align: center; }
   .empty-icon { font-size: 40px; margin-bottom: 16px; }
   .empty-title { font-size: 16px; font-weight: 600; color: var(--text-mid); margin-bottom: 8px; }
   .empty-sub { font-size: 13px; color: var(--text-muted); font-family: var(--font-mono); }
 
-  /* ── Analytics Tab ── */
-  .analytics-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-  .analytics-card {
-    background: var(--bg2); border: 1px solid var(--border);
-    border-radius: 16px; padding: 24px;
-  }
-  .analytics-card-title {
-    font-family: var(--font-mono); font-size: 11px;
-    text-transform: uppercase; letter-spacing: 1.5px;
-    color: var(--text-muted); margin-bottom: 18px;
-  }
-  .league-row {
-    display: flex; align-items: center;
-    justify-content: space-between; margin-bottom: 12px;
-  }
+  /* ── Analytics ── */
+  .analytics-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .analytics-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 24px; }
+  .analytics-card-title { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 18px; }
+  .league-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
   .league-name { font-size: 13px; font-weight: 600; color: var(--text); }
-  .league-rate {
-    font-family: var(--font-mono); font-size: 12px; color: var(--green);
-  }
+  .league-rate { font-family: var(--font-mono); font-size: 12px; color: var(--green); }
   .league-bar-track { flex: 1; height: 3px; background: var(--bg3); border-radius: 3px; margin: 0 12px; }
   .league-bar-fill { height: 100%; background: var(--green); border-radius: 3px; }
-
-  .trend-row {
-    display: flex; align-items: center;
-    justify-content: space-between; padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-  }
+  .trend-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
   .trend-row:last-child { border-bottom: none; }
   .trend-date { font-family: var(--font-mono); color: var(--text-muted); }
   .trend-stats { color: var(--text-mid); }
@@ -405,44 +310,17 @@ const styles = `
   .trend-rate.mid  { color: #f59e0b; }
 
   /* ── Loading ── */
-  .loading-screen {
-    min-height: 100vh; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 20px;
-    background: var(--bg);
-  }
-  .loading-logo {
-    font-family: var(--font-display); font-size: 48px;
-    letter-spacing: 4px; color: var(--text);
-  }
+  .loading-screen { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; background: var(--bg); }
+  .loading-logo { font-family: var(--font-display); font-size: 48px; letter-spacing: 4px; color: var(--text); }
   .loading-logo span { color: var(--green); }
-  .loading-bar {
-    width: 200px; height: 2px; background: var(--bg3);
-    border-radius: 2px; overflow: hidden;
-  }
-  .loading-bar-fill {
-    height: 100%; width: 40%;
-    background: var(--green);
-    animation: slide 1.2s ease-in-out infinite;
-  }
-  @keyframes slide {
-    0%   { transform: translateX(-100%); }
-    100% { transform: translateX(400%); }
-  }
-  .loading-text {
-    font-family: var(--font-mono); font-size: 11px;
-    color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase;
-  }
+  .loading-bar { width: 200px; height: 2px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+  .loading-bar-fill { height: 100%; width: 40%; background: var(--green); animation: slide 1.2s ease-in-out infinite; }
+  @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
+  .loading-text { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
 
   /* ── Footer ── */
-  .footer {
-    border-top: 1px solid var(--border);
-    padding: 24px;
-    text-align: center;
-  }
-  .footer-text {
-    font-family: var(--font-mono); font-size: 11px;
-    color: var(--text-muted); letter-spacing: 0.5px;
-  }
+  .footer { border-top: 1px solid var(--border); padding: 24px; text-align: center; }
+  .footer-text { font-family: var(--font-mono); font-size: 11px; color: var(--text-muted); letter-spacing: 0.5px; }
   .footer-text a { color: var(--green); text-decoration: none; }
   .footer-text a:hover { text-decoration: underline; }
 
@@ -460,7 +338,6 @@ const styles = `
     .tabs { padding: 12px 16px 0; gap: 6px; }
     .tab { flex: 1; font-size: 11px; padding: 9px 6px; text-align: center; }
     .content { padding: 12px 16px 60px; }
-    .stats-bar { padding: 12px 16px; }
     .stat-value { font-size: 28px; }
     .stat-label { font-size: 8px; }
     .section-title { font-size: 26px; }
@@ -470,6 +347,7 @@ const styles = `
     .card-bottom { flex-direction: column; align-items: flex-start; gap: 6px; }
     .match-date { font-size: 10px; }
     .analytics-card { padding: 16px; }
+    .status-banner { font-size: 10px; padding: 7px 16px; }
   }
   @media (max-width: 360px) {
     .logo-title { font-size: 18px; }
@@ -484,6 +362,30 @@ function getConfClass(conf) {
   return 'conf-low'
 }
 
+// ── Status Banner Component ────────────────────────────────────
+function StatusBanner({ status }) {
+  if (!status) return null
+
+  const ok      = status.pipeline_ran_today
+  const pending = !ok
+  const time    = formatLastUpdated(status.last_updated)
+  const count   = status.daily_picks_today || 0
+
+  const cls     = ok ? 'ok' : 'pending'
+  const icon    = ok ? '✅' : '⏳'
+  const text    = ok
+    ? `Pipeline updated today at ${time} — ${count} daily pick${count !== 1 ? 's' : ''} ready`
+    : 'Pipeline not yet run today — predictions coming soon'
+
+  return (
+    <div className={`status-banner ${cls}`}>
+      <span className={`status-dot ${cls}`} />
+      <span>{icon} {text}</span>
+    </div>
+  )
+}
+
+// ── Match Card Component ───────────────────────────────────────
 function MatchCard({ match, index }) {
   return (
     <div className="match-card" style={{ animationDelay: `${index * 0.06}s` }}>
@@ -493,7 +395,6 @@ function MatchCard({ match, index }) {
           pb {match.confidence}
         </span>
       </div>
-
       <div className="teams-row">
         <div className="team">
           <div className="team-name">{match.home_team}</div>
@@ -505,7 +406,6 @@ function MatchCard({ match, index }) {
           <div className="team-side">Away</div>
         </div>
       </div>
-
       <div className="conf-row">
         <span className="conf-label">Draw probability</span>
         <span className="conf-val">pb {match.confidence}</span>
@@ -513,7 +413,6 @@ function MatchCard({ match, index }) {
       <div className="bar-track">
         <div className="bar-fill" style={{ width: `${match.confidence}%` }} />
       </div>
-
       <div className="card-bottom">
         <span className="uncertainty">
           Margin <span>±{match.uncertainty_margin || 0}</span>
@@ -523,7 +422,7 @@ function MatchCard({ match, index }) {
         </span>
       </div>
 
-      {/* ── Swarm Signal Panel ── */}
+      {/* Swarm Signal */}
       {match.swarm_signal != null && (
         <div style={{
           marginTop: '10px', paddingTop: '10px',
@@ -561,7 +460,7 @@ function MatchCard({ match, index }) {
         </div>
       )}
 
-      {/* ── Draw Model Signal ── */}
+      {/* Draw Model Signal */}
       {match.draw_model_signal != null && (
         <div style={{
           marginTop: '6px', paddingTop: '8px',
@@ -574,16 +473,11 @@ function MatchCard({ match, index }) {
           </span>
           <span style={{
             fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600,
-            color: match.draw_model_signal >= 60 ? 'var(--green)'
-                 : match.draw_model_signal >= 40 ? '#f59e0b'
-                 : '#ff4b4b'
+            color: match.draw_model_signal >= 60 ? 'var(--green)' : match.draw_model_signal >= 40 ? '#f59e0b' : '#ff4b4b'
           }}>
             {match.draw_model_signal}%
           </span>
-          <span style={{
-            fontFamily: 'var(--font-mono)', fontSize: '9px',
-            color: 'var(--text-muted)', fontStyle: 'italic'
-          }}>
+          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
             historian
           </span>
         </div>
@@ -597,27 +491,31 @@ function EmptyState({ message }) {
     <div className="empty">
       <div className="empty-icon">⚡</div>
       <div className="empty-title">{message}</div>
-      <div className="empty-sub">My model updates daily at 23:00 UTC</div>
+      <div className="empty-sub">Pipeline runs daily at 06:00 UTC</div>
     </div>
   )
 }
 
+// ── Main App ───────────────────────────────────────────────────
 export default function App() {
-  const [daily, setDaily]       = useState([])
-  const [weekly, setWeekly]     = useState([])
+  const [daily,     setDaily]     = useState([])
+  const [weekly,    setWeekly]    = useState([])
   const [dashboard, setDashboard] = useState(null)
-  const [loading, setLoading]   = useState(true)
+  const [status,    setStatus]    = useState(null)
+  const [loading,   setLoading]   = useState(true)
   const [activeTab, setActiveTab] = useState('daily')
 
   useEffect(() => {
     Promise.all([
       fetch(`${API}/predictions`).then(r => r.json()),
       fetch(`${API}/dashboard`).then(r => r.json()),
+      fetch(`${API}/status`).then(r => r.json()).catch(() => null),
     ])
-      .then(([pred, dash]) => {
+      .then(([pred, dash, stat]) => {
         setDaily(pred.daily || [])
         setWeekly(pred.weekly || [])
         setDashboard(dash)
+        setStatus(stat)
       })
       .catch(console.error)
       .finally(() => setLoading(false))
@@ -634,10 +532,10 @@ export default function App() {
     </>
   )
 
-  const stats = dashboard?.overall_stats
-  const learner = dashboard?.learner_status
+  const stats      = dashboard?.overall_stats
+  const learner    = dashboard?.learner_status
   const topLeagues = dashboard?.top_leagues || []
-  const trend = dashboard?.weekly_trend || []
+  const trend      = dashboard?.weekly_trend || []
 
   return (
     <>
@@ -645,8 +543,11 @@ export default function App() {
       <div className="noise-bg" />
       <div className="glow-orb glow-orb-1" />
       <div className="glow-orb glow-orb-2" />
-
       <div className="wrapper">
+
+        {/* ── Status Banner — sits above header, always visible ── */}
+        <StatusBanner status={status} />
+
         {/* ── Header ── */}
         <header className="header">
           <div className="header-inner">
@@ -691,9 +592,9 @@ export default function App() {
         {/* ── Tabs ── */}
         <div className="tabs">
           {[
-            { id: 'daily',     label: '📅  Daily Picks',    cls: 'active-green'  },
-            { id: 'weekly',    label: '📆  7-Day Outlook',  cls: 'active-blue'   },
-            { id: 'analytics', label: '📈  Analytics',      cls: 'active-purple' },
+            { id: 'daily',     label: '📅  Daily Picks',   cls: 'active-green'  },
+            { id: 'weekly',    label: '📆  7-Day Outlook', cls: 'active-blue'   },
+            { id: 'analytics', label: '📈  Analytics',     cls: 'active-purple' },
           ].map(t => (
             <button
               key={t.id}
@@ -719,8 +620,7 @@ export default function App() {
               <div className="match-grid">
                 {daily.length > 0
                   ? daily.map((m, i) => <MatchCard key={i} match={m} index={i} />)
-                  : <EmptyState message="No picks for today yet" />
-                }
+                  : <EmptyState message="No picks for today yet" />}
               </div>
             </>
           )}
@@ -736,8 +636,7 @@ export default function App() {
               <div className="match-grid">
                 {weekly.length > 0
                   ? weekly.map((m, i) => <MatchCard key={i} match={m} index={i} />)
-                  : <EmptyState message="No weekly predictions yet" />
-                }
+                  : <EmptyState message="No weekly predictions yet" />}
               </div>
             </>
           )}
@@ -749,8 +648,6 @@ export default function App() {
                 <div className="section-sub">Full transparency — every result tracked</div>
               </div>
               <div className="analytics-grid">
-
-                {/* Top Leagues */}
                 <div className="analytics-card">
                   <div className="analytics-card-title">Draw hit-rate by league</div>
                   {topLeagues.length > 0 ? topLeagues.map((l, i) => (
@@ -762,13 +659,10 @@ export default function App() {
                       <span className="league-rate">{l.draw_hit_rate ?? l.accuracy ?? 0}%</span>
                     </div>
                   )) : (
-                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-mono)' }}>
-                      No league data yet
-                    </div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-mono)' }}>No league data yet</div>
                   )}
                 </div>
 
-                {/* Weekly Trend */}
                 <div className="analytics-card">
                   <div className="analytics-card-title">7-day accuracy trend</div>
                   {trend.length > 0 ? trend.map((d, i) => {
@@ -783,19 +677,16 @@ export default function App() {
                       </div>
                     )
                   }) : (
-                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-mono)' }}>
-                      No trend data yet
-                    </div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-mono)' }}>No trend data yet</div>
                   )}
                 </div>
 
-                {/* Model Status */}
                 <div className="analytics-card" style={{ gridColumn: '1 / -1' }}>
                   <div className="analytics-card-title">Model status</div>
                   <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
                     {[
                       { label: 'Phase', value: stats?.total_predictions < 25 ? '1 — Calibration' : stats?.total_predictions < 50 ? '2 — Stabilization' : stats?.total_predictions < 100 ? '3 — Optimization' : '4 — Full Autonomy' },
-                      { label: 'Last Updated', value: learner?.last_updated ?? 'N/A' },
+                      { label: 'Last Pipeline Run', value: formatLastUpdated(status?.last_updated) ?? 'N/A' },
                       { label: 'Confidence Adj', value: `${(learner?.adjustment ?? 0) >= 0 ? '+' : ''}${learner?.adjustment ?? 0}%` },
                       { label: 'Real Draw Rate (30d)', value: `${dashboard?.real_draw_rate?.real_draw_rate ?? '—'}%` },
                     ].map((item, i) => (
@@ -810,17 +701,15 @@ export default function App() {
                     ))}
                   </div>
                 </div>
-
               </div>
             </>
           )}
-
         </div>
 
         {/* ── Footer ── */}
         <footer className="footer">
           <div className="footer-text">
-            My model updates daily at 23:00 UTC · Data from football-data.org ·{' '}
+            Pipeline runs daily at 06:00 UTC · Data from football-data.org ·{' '}
             <a href="https://t.me/Drawsignalai" target="_blank" rel="noreferrer">
               t.me/Drawsignalai
             </a>
