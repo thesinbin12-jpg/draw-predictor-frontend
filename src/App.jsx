@@ -460,6 +460,47 @@ function MatchCard({ match, index }) {
         </div>
       )}
 
+      {/* Value Gap — model vs market */}
+      {match.value_flag && match.value_flag !== 'ALIGNED' && (
+        <div style={{
+          marginTop: '6px', paddingTop: '8px',
+          borderTop: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', gap: '8px',
+        }}>
+          {match.value_flag === 'HIGH_VALUE' && (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: '10px',
+              padding: '3px 8px', borderRadius: '4px',
+              background: 'rgba(0,232,122,0.12)',
+              color: 'var(--green)',
+              border: '1px solid rgba(0,232,122,0.35)',
+              fontWeight: 600,
+            }}>
+              💎 VALUE — model sees {match.value_gap > 0 ? '+' : ''}{match.value_gap}% vs market
+            </span>
+          )}
+          {match.value_flag === 'MARKET_FADE' && (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: '10px',
+              padding: '3px 8px', borderRadius: '4px',
+              background: 'rgba(255,75,75,0.08)',
+              color: '#ff4b4b',
+              border: '1px solid rgba(255,75,75,0.25)',
+            }}>
+              ⚠️ MARKET FADE — market {match.value_gap}% vs model
+            </span>
+          )}
+          {match.value_flag === 'FILL' && (
+            <span style={{
+              fontFamily: 'var(--font-mono)', fontSize: '9px',
+              color: 'var(--text-muted)',
+            }}>
+              Fill pick — lower confidence
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Draw Model Signal */}
       {match.draw_model_signal != null && (
         <div style={{
